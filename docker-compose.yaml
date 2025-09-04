@@ -1,0 +1,29 @@
+services:
+  dev_app:
+    image: accounts_app:dev
+    container_name: accounts_app_dev
+    build:
+      context: .
+      dockerfile: docker/dockerfile.dev
+    ports:
+      - "8000:80"
+    volumes:
+      - ".:/home/accounts_app"
+    restart: on-failure
+
+  # Running the test cases
+  test_app:
+    image: accounts_app:test
+    container_name: accounts_app_test
+    build:
+      context: .
+      dockerfile: docker/dockerfile.test
+  
+  # Build only
+  prod_app:
+    image: accounts_app:prod
+    build:
+      context: .
+      dockerfile: docker/dockerfile.prod
+    # ports:
+    #   - "8001:80"
