@@ -114,7 +114,7 @@ https://documenter.getpostman.com/view/15907649/2sB3HkpKhQ
 
 **Jenkins for CI**
 - We can setup jenkins runner, to build CI pipeline that includes linting, building of docker image, testing it and pushing to container registry.
-- Jenkins runner setup can be done mostly in 3 ways. Linux/MacOS runners, jenkins running inside docker container, jenkins runner with kubernetes.
+- Jenkins runner setup can be done in 3 ways: Linux/MacOS runners, jenkins running inside docker container, jenkins runner with kubernetes.
 - To build image with kubernetes jenkins runner, we will have to use Kaniko.
 
 **Kubernetes Cluster**
