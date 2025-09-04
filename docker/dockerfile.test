@@ -1,0 +1,31 @@
+FROM python:3.13-slim AS build
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+COPY requirements.txt requirements.txt
+
+RUN pip3 install --upgrade pip && \
+    pip3 install -r requirements.txt --no-cache-dir
+
+
+FROM python:3.13-slim AS runtime
+
+RUN groupadd -g 1000 apigroup &&  \
+    useradd -m -u 1000 -g apigroup apiuser
+
+WORKDIR /home/apiuser/accounts_app
+RUN chown -R apiuser:apigroup /home/apiuser
+
+COPY --from=build --chown=apiuser:apigroup /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+COPY --chown=apiuser:apigroup . .
+
+USER apiuser
+
+CMD ["pytest"]
+

@@ -1,0 +1,39 @@
+FROM python:3.13-slim AS build
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+COPY requirements.txt requirements.txt
+
+RUN pip3 install --upgrade pip && \
+    pip3 install -r requirements.txt --no-cache-dir
+
+
+FROM python:3.13-slim AS runtime
+
+RUN apt-get update && \ 
+   apt-get install -y curl && \ 
+   rm -rf /var/lib/apt/lists/*
+
+RUN groupadd -g 1000 apigroup &&  \
+    useradd -m -u 1000 -g apigroup apiuser
+
+WORKDIR /home/apiuser/accounts_app
+RUN chown -R apiuser:apigroup /home/apiuser
+
+COPY --from=build --chown=apiuser:apigroup /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+COPY --chown=apiuser:apigroup . .
+
+USER apiuser
+
+EXPOSE 80
+
+HEALTHCHECK --interval=5s --timeout=5s --retries=5 \
+    CMD curl --include --request GET http://localhost:80/api/v1/healthz || exit 1
+
+CMD [ "uvicorn", "app.main:app", "--port", "80", "--host", "0.0.0.0", "--reload", "--log-level", "debug" ]

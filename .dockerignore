@@ -1,0 +1,9 @@
+*.env
+.DS_Store
+env/
+*.pyc
+static/
+sample_main.py
+.pytest_cache/
+venv/
+secrets/
