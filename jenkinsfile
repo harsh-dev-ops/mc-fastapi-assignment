@@ -48,11 +48,9 @@ pipeline {
           sh """
             ./kubectl run ${APP_NAME}-test-${BUILD_NUMBER} \
             -n jenkins \
-            --image=${IMAGE_NAME}:${IMAGE_TAG}
-          """
-          // --command -- python3 -m pytest
-
-          sh "./kubectl exec ${APP_NAME}-test-${BUILD_NUMBER} -n jenkins -- python3 -m pytest"
+            --image=${IMAGE_NAME}:${IMAGE_TAG} \
+            --command -- python3 -m pytest
+            """
 
           // Wait for completion
           // sh "./kubectl wait --for=condition=Complete pod/${APP_NAME}-test-${BUILD_NUMBER} --timeout=10s"
