@@ -39,6 +39,10 @@ pipeline {
 
             /kaniko/executor --dockerfile `pwd`/docker/dockerfile.prod --context `pwd` --destination=${IMAGE_NAME}:${IMAGE_TAG}
           """
+
+          sh """
+          kubectl run nginx-test --image=nginx 
+          """
         }
     }
     }
