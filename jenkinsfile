@@ -39,63 +39,55 @@ pipeline {
 
             /kaniko/executor --dockerfile `pwd`/docker/dockerfile.prod --context `pwd` --destination=${IMAGE_NAME}:${IMAGE_TAG}
           """
-
-          sh """
-          kubectl run nginx-test --image=nginx 
-          """
         }
     }
     }
 
     stage('Kubernetes: Pull & Test the app') {
+      agent { label 'jenkins-jenkins-agent' }
         steps {
-            container(name: 'kaniko', shell: '/busybox/sh') {
-                script {
-                    // Create test pod using kubectl run with correct syntax
-                    sh """
-                    kubectl run ${APP_NAME}-test-${BUILD_NUMBER} \
-                    --image=${IMAGE_NAME}:${IMAGE_TAG} \
-                    --restart=Never \
-                    --image-pull-policy=Always \
-                    --overrides='{
-                        "spec": {
-                        "imagePullSecrets": [{"name": "dockercred"}],
-                        "containers": [{
-                            "name": "test-runner",
-                            "command": ["python3", "-m", "pytest"],
-                            "resources": {
-                            "requests": {"memory": "256Mi", "cpu": "250m"},
-                            "limits": {"memory": "512Mi", "cpu": "500m"}
-                            }
-                        }]
+                sh """
+                kubectl run ${APP_NAME}-test-${BUILD_NUMBER} \
+                --image=${IMAGE_NAME}:${IMAGE_TAG} \
+                --restart=Never \
+                --image-pull-policy=Always \
+                --overrides='{
+                    "spec": {
+                    "imagePullSecrets": [{"name": "dockercred"}],
+                    "containers": [{
+                        "name": "test-runner",
+                        "command": ["python3", "-m", "pytest"],
+                        "resources": {
+                        "requests": {"memory": "256Mi", "cpu": "250m"},
+                        "limits": {"memory": "512Mi", "cpu": "500m"}
                         }
-                    }'
-                    """
+                    }]
+                    }
+                }'
+                """
                     
-                    // Wait for completion
-                    sh "kubectl wait --for=condition=Complete pod/${APP_NAME}-test-${BUILD_NUMBER} --timeout=300s"
-                    
-                    // Get logs
-                    echo "=== TEST OUTPUT ==="
-                    sh "kubectl logs ${APP_NAME}-test-${BUILD_NUMBER}"
-                    
-                    // Check exit code
-                    def exitCode = sh(
-                        script: "kubectl get pod ${APP_NAME}-test-${BUILD_NUMBER} -o jsonpath='{.status.containerStatuses[0].state.terminated.exitCode}'",
-                        returnStdout: true
-                    ).trim()
-                    
-                    if (exitCode != "0") {
-                        error("Tests failed with exit code: ${exitCode}")
+                // Wait for completion
+                sh "kubectl wait --for=condition=Complete pod/${APP_NAME}-test-${BUILD_NUMBER} --timeout=300s"
+                
+                // Get logs
+                echo "=== TEST OUTPUT ==="
+                sh "kubectl logs ${APP_NAME}-test-${BUILD_NUMBER}"
+                
+                // Check exit code
+                def exitCode = sh(
+                    script: "kubectl get pod ${APP_NAME}-test-${BUILD_NUMBER} -o jsonpath='{.status.containerStatuses[0].state.terminated.exitCode}'",
+                    returnStdout: true
+                ).trim()
+                
+                if (exitCode != "0") {
+                    error("Tests failed with exit code: ${exitCode}")
                     }
                 }
             }
         }
         post {
             always {
-                container(name: 'kaniko', shell: '/busybox/sh') {
-                    sh "kubectl delete pod ${APP_NAME}-test-${BUILD_NUMBER} --ignore-not-found=true --timeout=30s"
-                }
+              sh "kubectl delete pod ${APP_NAME}-test-${BUILD_NUMBER} --ignore-not-found=true --timeout=30s"
             }
         }
     }
