@@ -43,15 +43,15 @@ pipeline {
 
     stage('Kubernetes: Pull & Test the app') {
       steps {
-        
+          sh "curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.23.0/bin/linux/amd64/kubectl"
+          sh "chmod +x ./kubectl"
           sh """
-            kubectl run ${APP_NAME}-test-${BUILD_NUMBER} \
+            ./kubectl run ${APP_NAME}-test-${BUILD_NUMBER} \
             --image=${IMAGE_NAME}:${IMAGE_TAG} \
             --restart=Never \
             --image-pull-policy=Always \
             --overrides='{
               "spec": {
-                "imagePullSecrets": [{"name": "dockercred"}],
                 "containers": [{
                   "name": "test-runner",
                   "command": ["python3", "-m", "pytest"],
@@ -65,13 +65,13 @@ pipeline {
           """
 
           // Wait for completion
-          sh "kubectl wait --for=condition=Complete pod/${APP_NAME}-test-${BUILD_NUMBER} --timeout=300s"
+          sh "./kubectl wait --for=condition=Complete pod/${APP_NAME}-test-${BUILD_NUMBER} --timeout=300s"
 
           // Get logs
           echo "=== TEST OUTPUT ==="
-          sh "kubectl logs ${APP_NAME}-test-${BUILD_NUMBER}"
+          sh "./kubectl logs ${APP_NAME}-test-${BUILD_NUMBER}"
 
-          sh "kubectl delete pod ${APP_NAME}-test-${BUILD_NUMBER} --ignore-not-found=true --timeout=30s"
+          sh "./kubectl delete pod ${APP_NAME}-test-${BUILD_NUMBER} --ignore-not-found=true --timeout=30s"
       }
     }
 
