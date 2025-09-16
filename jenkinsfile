@@ -45,10 +45,53 @@ pipeline {
 
     stage('Kubernetes: Pull & Test the app') {
         steps {
-            container('kubectl'){
-                sh """
-                kubectl run ${APP_NAME} --image=${IMAGE_NAME}:${IMAGE_TAG} --command python3 -m pytest
-            """
+            container('kubectl') {
+                script {
+                    // Create test pod using kubectl run with correct syntax
+                    sh """
+                    kubectl run ${APP_NAME}-test-${BUILD_NUMBER} \
+                    --image=${IMAGE_NAME}:${IMAGE_TAG} \
+                    --restart=Never \
+                    --image-pull-policy=Always \
+                    --overrides='{
+                        "spec": {
+                        "imagePullSecrets": [{"name": "dockercred"}],
+                        "containers": [{
+                            "name": "test-runner",
+                            "command": ["python3", "-m", "pytest", "/app/tests/", "-v"],
+                            "resources": {
+                            "requests": {"memory": "256Mi", "cpu": "250m"},
+                            "limits": {"memory": "512Mi", "cpu": "500m"}
+                            }
+                        }]
+                        }
+                    }'
+                    """
+                    
+                    // Wait for completion
+                    sh "kubectl wait --for=condition=Complete pod/${APP_NAME}-test-${BUILD_NUMBER} --timeout=300s"
+                    
+                    // Get logs
+                    echo "=== TEST OUTPUT ==="
+                    sh "kubectl logs ${APP_NAME}-test-${BUILD_NUMBER}"
+                    
+                    // Check exit code
+                    def exitCode = sh(
+                        script: "kubectl get pod ${APP_NAME}-test-${BUILD_NUMBER} -o jsonpath='{.status.containerStatuses[0].state.terminated.exitCode}'",
+                        returnStdout: true
+                    ).trim()
+                    
+                    if (exitCode != "0") {
+                        error("Tests failed with exit code: ${exitCode}")
+                    }
+                }
+            }
+        }
+        post {
+            always {
+                container('kubectl') {
+                    sh "kubectl delete pod ${APP_NAME}-test-${BUILD_NUMBER} --ignore-not-found=true --timeout=30s"
+                }
             }
         }
     }
