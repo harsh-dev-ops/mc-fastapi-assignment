@@ -68,12 +68,13 @@ pipeline {
       }
     }
 
-    stage('Kaniko: Build & Push the Production Image') {
+    stage('Kaniko: Build & Push the prod image') {
       steps {
         container(name: 'kaniko', shell: '/busybox/sh') {
-          sh '''#!/busybox/sh
+          sh """
+            #!/busybox/sh
             /kaniko/executor --dockerfile `pwd`/docker/dockerfile.prod --context `pwd` --destination=${IMAGE_NAME}:latest
-          '''
+          """
         }
       }
     }
