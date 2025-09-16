@@ -47,18 +47,21 @@ pipeline {
           sh "chmod +x ./kubectl"
           sh """
             ./kubectl run ${APP_NAME}-test-${BUILD_NUMBER} \
-            --image=${IMAGE_NAME}:${IMAGE_TAG} \
-            --command -- python3 -m pytest
+            -n jenkins \
+            --image=${IMAGE_NAME}:${IMAGE_TAG}
+            // --command -- python3 -m pytest
           """
 
+          sh "./kubectl exec ${APP_NAME}-test-${BUILD_NUMBER} -n jenkins -- python3 -m pytest"
+
           // Wait for completion
-          sh "./kubectl wait --for=condition=Complete pod/${APP_NAME}-test-${BUILD_NUMBER} --timeout=300s"
+          // sh "./kubectl wait --for=condition=Complete pod/${APP_NAME}-test-${BUILD_NUMBER} --timeout=10s"
 
           // Get logs
           echo "=== TEST OUTPUT ==="
           sh "./kubectl logs ${APP_NAME}-test-${BUILD_NUMBER}"
 
-          sh "./kubectl delete pod ${APP_NAME}-test-${BUILD_NUMBER} --ignore-not-found=true --timeout=30s"
+          sh "./kubectl delete pod ${APP_NAME}-test-${BUILD_NUMBER} --ignore-not-found=true --timeout=10s"
       }
     }
 
