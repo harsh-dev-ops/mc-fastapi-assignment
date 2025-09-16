@@ -45,6 +45,8 @@ pipeline {
       steps {
           sh "curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.23.0/bin/linux/amd64/kubectl"
           sh "chmod +x ./kubectl"
+          sh "kubectl delete pod/${APP_NAME}-test -n jenkins --ignore-not-found=true"
+
           sh """
             ./kubectl run ${APP_NAME}-test \
             -n jenkins \
