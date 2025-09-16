@@ -46,20 +46,20 @@ pipeline {
           sh "curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.23.0/bin/linux/amd64/kubectl"
           sh "chmod +x ./kubectl"
           sh """
-            ./kubectl run ${APP_NAME}-test-${BUILD_NUMBER} \
+            ./kubectl run ${APP_NAME}-test \
             -n jenkins \
             --image=${IMAGE_NAME}:${IMAGE_TAG} \
             --command -- python3 -m pytest
             """
 
           // Wait for completion
-          // sh "./kubectl wait --for=condition=Complete pod/${APP_NAME}-test-${BUILD_NUMBER} --timeout=10s"
+          sh "./kubectl wait --for=condition=Complete pod/${APP_NAME}-test --timeout=30s"
 
           // Get logs
           echo "=== TEST OUTPUT ==="
-          sh "./kubectl logs ${APP_NAME}-test-${BUILD_NUMBER}"
+          sh "./kubectl logs ${APP_NAME}-test"
 
-          sh "./kubectl delete pod ${APP_NAME}-test-${BUILD_NUMBER} --ignore-not-found=true --timeout=10s"
+          sh "./kubectl delete pod ${APP_NAME}-test --ignore-not-found=true --timeout=30s"
       }
     }
 
