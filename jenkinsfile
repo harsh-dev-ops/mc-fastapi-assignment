@@ -7,16 +7,14 @@ pipeline {
   }
 
   environment {
-        APP_NAME = "mc-fastapi-assignment"
-        RELEASE = "1.0.0"
-        DOCKER_USER = "harsh8383"
-        DOCKER_PASS = 'dockerhub'
-        IMAGE_NAME = "${DOCKER_USER}" + "/" + "${APP_NAME}"
-        IMAGE_TAG = "${RELEASE}-${BUILD_NUMBER}"
-        /* JENKINS_API_TOKEN = credentials("JENKINS_API_TOKEN") */
-
-    }
-
+    APP_NAME     = "mc-fastapi-assignment"
+    RELEASE      = "1.0.0"
+    DOCKER_USER  = "harsh8383"
+    DOCKER_PASS  = 'dockerhub'
+    IMAGE_NAME   = "${DOCKER_USER}/${APP_NAME}"
+    IMAGE_TAG    = "${RELEASE}-${BUILD_NUMBER}"
+    /* JENKINS_API_TOKEN = credentials("JENKINS_API_TOKEN") */
+  }
 
   stages {
 
@@ -26,7 +24,7 @@ pipeline {
       }
     }
 
-    stage("Checkout from SCM"){
+    stage("Checkout from SCM") {
       steps {
         git branch: 'dev', credentialsId: 'github', url: 'https://github.com/harsh-dev-ops/mc-fastapi-assignment'
       }
@@ -36,8 +34,7 @@ pipeline {
       steps {
         container(name: 'kaniko', shell: '/busybox/sh') {
           sh """
-          #!/busybox/sh
-
+            #!/busybox/sh
             /kaniko/executor --dockerfile `pwd`/docker/dockerfile.prod --context `pwd` --destination=${IMAGE_NAME}:${IMAGE_TAG}
           """
         }
@@ -45,65 +42,55 @@ pipeline {
     }
 
     stage('Kubernetes: Pull & Test the app') {
-        steps {
-          container(name: 'kubectl') {
-                sh """
-                kubectl run ${APP_NAME}-test-${BUILD_NUMBER} \
-                --image=${IMAGE_NAME}:${IMAGE_TAG} \
-                --restart=Never \
-                --image-pull-policy=Always \
-                --overrides='{
-                    "spec": {
-                    "imagePullSecrets": [{"name": "dockercred"}],
-                    "containers": [{
-                        "name": "test-runner",
-                        "command": ["python3", "-m", "pytest"],
-                        "resources": {
-                        "requests": {"memory": "256Mi", "cpu": "250m"},
-                        "limits": {"memory": "512Mi", "cpu": "500m"}
-                        }
-                    }]
-                    }
-                }'
-                """
-                    
-                // Wait for completion
-                sh "kubectl wait --for=condition=Complete pod/${APP_NAME}-test-${BUILD_NUMBER} --timeout=300s"
-                
-                // Get logs
-                echo "=== TEST OUTPUT ==="
-                sh "kubectl logs ${APP_NAME}-test-${BUILD_NUMBER}"
-          }
+      steps {
+        container(name: 'kubectl') {
+          sh """
+            kubectl run ${APP_NAME}-test-${BUILD_NUMBER} \
+            --image=${IMAGE_NAME}:${IMAGE_TAG} \
+            --restart=Never \
+            --image-pull-policy=Always \
+            --overrides='{
+              "spec": {
+                "imagePullSecrets": [{"name": "dockercred"}],
+                "containers": [{
+                  "name": "test-runner",
+                  "command": ["python3", "-m", "pytest"],
+                  "resources": {
+                    "requests": {"memory": "256Mi", "cpu": "250m"},
+                    "limits": {"memory": "512Mi", "cpu": "500m"}
+                  }
+                }]
+              }
+            }'
+          """
 
-          post {
-            container(name: 'kubectl') {
-              always {
-              sh "kubectl delete pod ${APP_NAME}-test-${BUILD_NUMBER} --ignore-not-found=true --timeout=30s"
-            }
-            }   
+          // Wait for completion
+          sh "kubectl wait --for=condition=Complete pod/${APP_NAME}-test-${BUILD_NUMBER} --timeout=300s"
+
+          // Get logs
+          echo "=== TEST OUTPUT ==="
+          sh "kubectl logs ${APP_NAME}-test-${BUILD_NUMBER}"
         }
-    }
-
-    stage('Kaniko: Build & Push the Production Image'){
-          steps {
-          container(name: 'kaniko', shell: '/busybox/sh') {
-            sh '''#!/busybox/sh
-              /kaniko/executor --dockerfile `pwd`/docker/dockerfile.prod --context `pwd` --destination=${IMAGE_NAME}:latest
-            '''
-          }
       }
-        
+
+      post {
+        always {
+          container(name: 'kubectl') {
+            sh "kubectl delete pod ${APP_NAME}-test-${BUILD_NUMBER} --ignore-not-found=true --timeout=30s"
+          }
+        }
+      }
     }
 
-  
+    stage('Kaniko: Build & Push the Production Image') {
+      steps {
+        container(name: 'kaniko', shell: '/busybox/sh') {
+          sh '''#!/busybox/sh
+            /kaniko/executor --dockerfile `pwd`/docker/dockerfile.prod --context `pwd` --destination=${IMAGE_NAME}:latest
+          '''
+        }
+      }
+    }
+
   }
-
-
-
 }
-
-  
-
-  
-
-  
