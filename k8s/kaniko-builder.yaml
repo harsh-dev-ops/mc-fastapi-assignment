@@ -1,5 +1,7 @@
-
+apiVersion: v1
 kind: Pod
+metadata:
+  name: kaniko-builder
 spec:
   containers:
   - name: kaniko
@@ -12,6 +14,30 @@ spec:
     volumeMounts:
       - name: jenkins-docker-cfg
         mountPath: /kaniko/.docker
+      - name: kube-config
+        mountPath: /root/.kube
+  
+  # Add kubectl container
+  - name: kubectl
+    image: bitnami/kubectl:latest
+    imagePullPolicy: IfNotPresent
+    command:
+    - sleep
+    args:
+    - 9999999
+    volumeMounts:
+      - name: kube-config
+        mountPath: /root/.kube
+  
+  # Add python container for testing
+  - name: python
+    image: python:3.9-slim
+    imagePullPolicy: IfNotPresent
+    command:
+    - sleep
+    args:
+    - 9999999
+
   volumes:
   - name: jenkins-docker-cfg
     projected:
@@ -21,3 +47,11 @@ spec:
           items:
             - key: .dockerconfigjson
               path: config.json
+  
+  # Add kubeconfig volume
+  - name: kube-config
+    configMap:
+      name: kube-config
+      items:
+        - key: config
+          path: config

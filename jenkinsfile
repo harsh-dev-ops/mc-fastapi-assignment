@@ -45,7 +45,7 @@ pipeline {
 
     stage('Kubernetes: Pull & Test the app') {
         steps {
-            container('kubectl') {
+            container(name: 'kaniko', shell: '/busybox/sh') {
                 script {
                     // Create test pod using kubectl run with correct syntax
                     sh """
@@ -58,7 +58,7 @@ pipeline {
                         "imagePullSecrets": [{"name": "dockercred"}],
                         "containers": [{
                             "name": "test-runner",
-                            "command": ["python3", "-m", "pytest", "/app/tests/", "-v"],
+                            "command": ["python3", "-m", "pytest"],
                             "resources": {
                             "requests": {"memory": "256Mi", "cpu": "250m"},
                             "limits": {"memory": "512Mi", "cpu": "500m"}
@@ -89,7 +89,7 @@ pipeline {
         }
         post {
             always {
-                container('kubectl') {
+                container(name: 'kaniko', shell: '/busybox/sh') {
                     sh "kubectl delete pod ${APP_NAME}-test-${BUILD_NUMBER} --ignore-not-found=true --timeout=30s"
                 }
             }
