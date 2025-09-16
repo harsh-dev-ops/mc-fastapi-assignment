@@ -43,7 +43,7 @@ pipeline {
 
     stage('Kubernetes: Pull & Test the app') {
       steps {
-        container(name: 'kubectl') {
+        
           sh """
             kubectl run ${APP_NAME}-test-${BUILD_NUMBER} \
             --image=${IMAGE_NAME}:${IMAGE_TAG} \
@@ -70,15 +70,8 @@ pipeline {
           // Get logs
           echo "=== TEST OUTPUT ==="
           sh "kubectl logs ${APP_NAME}-test-${BUILD_NUMBER}"
-        }
-      }
 
-      post {
-        always {
-          container(name: 'kubectl') {
-            sh "kubectl delete pod ${APP_NAME}-test-${BUILD_NUMBER} --ignore-not-found=true --timeout=30s"
-          }
-        }
+          sh "kubectl delete pod ${APP_NAME}-test-${BUILD_NUMBER} --ignore-not-found=true --timeout=30s"
       }
     }
 
