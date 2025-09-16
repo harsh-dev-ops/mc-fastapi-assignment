@@ -12,12 +12,6 @@ spec:
     volumeMounts:
       - name: jenkins-docker-cfg
         mountPath: /kaniko/.docker
-  - name: jnlp
-    image: jenkins/inbound-agent:4.11.2-4
-    resources:
-      requests:
-        memory: "256Mi"
-        cpu: "250m"
   - name: kubectl
     image: bitnami/kubectl:1.23.0
     command: ["/bin/bash", "-c", "sleep infinity"]
