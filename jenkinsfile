@@ -49,8 +49,8 @@ pipeline {
             ./kubectl run ${APP_NAME}-test-${BUILD_NUMBER} \
             -n jenkins \
             --image=${IMAGE_NAME}:${IMAGE_TAG}
-            // --command -- python3 -m pytest
           """
+          // --command -- python3 -m pytest
 
           sh "./kubectl exec ${APP_NAME}-test-${BUILD_NUMBER} -n jenkins -- python3 -m pytest"
 
