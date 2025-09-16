@@ -15,10 +15,6 @@ spec:
   - name: kubectl
     image: bitnami/kubectl:1.33
     command: ["/bin/bash", "-c", "sleep infinity"]
-    resources:
-      requests:
-        memory: "128Mi"
-        cpu: "100m"
   volumes:
   - name: jenkins-docker-cfg
     projected:
