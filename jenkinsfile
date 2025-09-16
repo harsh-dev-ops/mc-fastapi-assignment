@@ -53,12 +53,11 @@ pipeline {
             """
 
           // Wait for completion
-          // sh "./kubectl wait --for=condition=Complete pod/${APP_NAME}-test --timeout=30s"
+          sh "./kubectl wait --for=condition=Complete ${APP_NAME}-test -n jenkins --timeout=30s"
 
           // Get logs
           echo "=== TEST OUTPUT ==="
           sh "./kubectl logs -n jenkins ${APP_NAME}-test"
-
           sh "./kubectl delete pod/${APP_NAME}-test -n jenkins --ignore-not-found=true --timeout=30s"
       }
     }
