@@ -17,6 +17,14 @@ pipeline {
 
     }
 
+
+
+}
+
+  
+
+  
+
   stages {
 
     stage("Cleanup Workspace") {
@@ -26,10 +34,10 @@ pipeline {
     }
 
     stage("Checkout from SCM"){
-            steps {
-                git branch: 'dev', credentialsId: 'github', url: 'https://github.com/harsh-dev-ops/mc-fastapi-assignment'
-            }
-        }
+      steps {
+        git branch: 'dev', credentialsId: 'github', url: 'https://github.com/harsh-dev-ops/mc-fastapi-assignment'
+      }
+    }
 
     stage('Kaniko: Build & Push the test image') {
       steps {
@@ -40,7 +48,7 @@ pipeline {
             /kaniko/executor --dockerfile `pwd`/docker/dockerfile.prod --context `pwd` --destination=${IMAGE_NAME}:${IMAGE_TAG}
           """
         }
-    }
+      }
     }
 
     stage('Kubernetes: Pull & Test the app') {
@@ -83,16 +91,14 @@ pipeline {
                     error("Tests failed with exit code: ${exitCode}")
                     }
                 }
-            }
-        }
-        post {
+          post {
             always {
               sh "kubectl delete pod ${APP_NAME}-test-${BUILD_NUMBER} --ignore-not-found=true --timeout=30s"
             }
         }
     }
 
-    stage('Kaniko: Build & Push the Production Image'){
+  stage('Kaniko: Build & Push the Production Image'){
         steps {
         container(name: 'kaniko', shell: '/busybox/sh') {
           sh '''#!/busybox/sh
@@ -100,7 +106,8 @@ pipeline {
           '''
         }
     }
+        
+  }
 
-      }
-    }
+  
 }
