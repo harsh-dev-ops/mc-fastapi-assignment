@@ -35,7 +35,10 @@ pipeline {
         container(name: 'kaniko', shell: '/busybox/sh') {
           sh """
             #!/busybox/sh
-            /kaniko/executor --dockerfile `pwd`/docker/dockerfile.prod --context `pwd` --destination=${IMAGE_NAME}:${IMAGE_TAG}
+            /kaniko/executor \ 
+            --dockerfile `pwd`/docker/dockerfile.prod \ 
+            --context `pwd` --destination=${IMAGE_NAME}:${IMAGE_TAG} \ 
+            --destination=${IMAGE_NAME}:latest
           """
         }
       }
@@ -65,17 +68,6 @@ pipeline {
           sh "./kubectl logs -n jenkins ${APP_NAME}-test"
 
           sh "./kubectl delete pod/${APP_NAME}-test -n jenkins --ignore-not-found=true --timeout=30s"
-      }
-    }
-
-    stage('Kaniko: Build & Push the prod image') {
-      steps {
-        container(name: 'kaniko', shell: '/busybox/sh') {
-          sh """
-            #!/busybox/sh
-            /kaniko/executor --dockerfile `pwd`/docker/dockerfile.prod --context `pwd` --destination=${IMAGE_NAME}:latest
-          """
-        }
       }
     }
 
