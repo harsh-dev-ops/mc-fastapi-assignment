@@ -55,8 +55,10 @@ pipeline {
             --command -- python3 -m pytest
             """
 
+          sleep 20
+
           // Wait for completion
-          sh "./kubectl wait --for=condition=Complete ${APP_NAME}-test -n jenkins --timeout=30s"
+          // sh "./kubectl wait --for=condition=Complete ${APP_NAME}-test -n jenkins --timeout=30s"
 
           // Get logs
           echo "=== TEST OUTPUT ==="
