@@ -1,7 +1,21 @@
 
 kind: Pod
 spec:
+
   containers:
+  - name: docker
+    image: docker:latest
+    command:
+    - cat
+    tty: true
+    volumeMounts:
+    - name: dockersock
+      mountPath: /var/run/docker.sock
+  - name: kubectl
+    image: lachlanevenson/k8s-kubectl:latest
+    command:
+    - cat
+    tty: true
   - name: kaniko
     image: gcr.io/kaniko-project/executor:debug
     imagePullPolicy: Always
@@ -12,7 +26,11 @@ spec:
     volumeMounts:
       - name: jenkins-docker-cfg
         mountPath: /kaniko/.docker
+        
   volumes:
+  - name: dockersock
+    hostPath:
+      path: /var/run/docker.sock
   - name: jenkins-docker-cfg
     projected:
       sources:

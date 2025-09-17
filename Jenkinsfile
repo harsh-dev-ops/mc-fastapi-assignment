@@ -2,7 +2,7 @@ pipeline {
 
   agent {
     kubernetes {
-      yamlFile 'k8s/kaniko-builder.yaml'
+      yamlFile 'k8s/jenkins-containers.yaml'
     }
   }
 
@@ -41,32 +41,61 @@ pipeline {
       }
     }
 
-    stage('Kubernetes: Pull & Test the app') {
-      steps {
-          sh "curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.23.0/bin/linux/amd64/kubectl"
-          sh "chmod +x ./kubectl"
+    // stage('Kubernetes: Pull & Test the app') {
+    //   steps {
+    //       sh "curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.23.0/bin/linux/amd64/kubectl"
+    //       sh "chmod +x ./kubectl"
 
-          sh "./kubectl delete pod/${APP_NAME}-test -n jenkins --ignore-not-found=true"
+    //       sh "./kubectl delete pod/${APP_NAME}-test -n jenkins --ignore-not-found=true"
+
+    //       sh """
+    //         ./kubectl run ${APP_NAME}-test \
+    //         -n jenkins \
+    //         --image=${IMAGE_NAME}:${IMAGE_TAG} \
+    //         --command -- python3 -m pytest
+    //         """
+
+    //       sleep 180
+
+    //       // Wait for completion
+    //       // sh "./kubectl wait --for=condition=Ready pod/${APP_NAME}-test -n jenkins --timeout=60s || true"
+    //       // sh "./kubectl wait --for=condition=ContainersReady pod/${APP_NAME}-test -n jenkins --timeout=60s || true"
+    //       // sh "./kubectl wait --for=condition=Complete pod/${APP_NAME}-test -n jenkins --timeout=120s || true"
+
+    //       // Get logs
+    //       echo "=== TEST OUTPUT ==="
+    //       sh "./kubectl logs -n jenkins ${APP_NAME}-test"
+
+    //       sh "./kubectl delete pod/${APP_NAME}-test -n jenkins --ignore-not-found=true --timeout=30s"
+    //   }
+    // }
+
+    stage("Kubectl: Pull & Test the app"){
+      steps {
+        container('kubectl') {
+           sh "kubectl delete pod/${APP_NAME}-test -n jenkins --ignore-not-found=true"
 
           sh """
-            ./kubectl run ${APP_NAME}-test \
+            kubectl run ${APP_NAME}-test \
             -n jenkins \
             --image=${IMAGE_NAME}:${IMAGE_TAG} \
             --command -- python3 -m pytest
             """
 
-          sleep 180
+          // sleep 180
 
           // Wait for completion
-          // sh "./kubectl wait --for=condition=Complete ${APP_NAME}-test -n jenkins --timeout=30s"
+          sh "kubectl wait --for=condition=Ready pod/${APP_NAME}-test -n jenkins --timeout=60s || true"
+          sh "kubectl wait --for=condition=ContainersReady pod/${APP_NAME}-test -n jenkins --timeout=60s || true"
+          sh "kubectl wait --for=condition=Complete pod/${APP_NAME}-test -n jenkins --timeout=120s || true"
 
           // Get logs
           echo "=== TEST OUTPUT ==="
-          sh "./kubectl logs -n jenkins ${APP_NAME}-test"
+          sh "kubectl logs -n jenkins ${APP_NAME}-test"
 
-          sh "./kubectl delete pod/${APP_NAME}-test -n jenkins --ignore-not-found=true --timeout=30s"
+          sh "kubectl delete pod/${APP_NAME}-test -n jenkins --ignore-not-found=true --timeout=30s"
+        }
       }
     }
-
   }
 }
